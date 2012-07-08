@@ -4,8 +4,6 @@ using System.Net.Sockets;
 using System.Text;
 using System.Threading;
 using Kato;
-using log4net;
-using log4net.Config;
 using NUnit.Framework;
 
 namespace Tests
@@ -19,8 +17,6 @@ namespace Tests
 		
 		public SmtpProcessorTests()
 		{
-			LogManager.ResetConfiguration();
-			BasicConfigurator.Configure();
 			_messageSpool = new MemoryMessageSpool();
 		}
 		

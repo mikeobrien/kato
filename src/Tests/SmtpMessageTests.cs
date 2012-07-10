@@ -1,5 +1,12 @@
+using System;
+using System.Diagnostics;
+using System.IO;
+using System.Net.Mail;
+using System.Text;
+using System.Text.RegularExpressions;
 using Kato;
 using NUnit.Framework;
+using Should;
 
 namespace Tests
 {
@@ -14,7 +21,7 @@ namespace Tests
 			"	filename=\"000000001.pdf\"\r\n" +
 			"\r\n";
 
-        private const string Attachment1BodyData = 
+        private const string Attachment1BodyDataEncoded = 
 			"JVBERi0xLjIKekdf1fnfSqQYt7AjczYfpmRSIEyEcx8KMSAwIG9iago8PAovVHlwZSAvQ2F0YWxv\r\n" +
 			"ZwovUGFnZXMgMyAwIFIKL091dGxpbmVzIDIgMCBSCj4+CmVuZG9iagoyIDAgb2JqCjw8Ci9UeXBl\r\n" +
 			"IC9PdXRsaW5lcwovQ291bnQgMQovRmlyc3QgOCAwIFIKL0xhc3QgOCAwIFIKPj4KZW5kb2JqCjMg\r\n" +
@@ -30,6 +37,15 @@ namespace Tests
 			"ZW50IDEKL0NvbG9yU3BhY2UgL0RldmljZUdyYXkKL0xlbmd0aCAyNTAxMgo+PgpzdHJlYW0KeJzs\r\n" +
 			"vV1sJEl+4BfZ2epsnSjmyGvguBBV0cIKXr+Z47HhGlxtxQgyTjBwwD74xfCXejyG51FsD2xVQ6WK\r\n" +
 			"\r\n";
+
+	    private readonly static byte[] Attachment1BodyData = Convert.FromBase64String(Attachment1BodyDataEncoded);
+
+	    private const string Attachment2BodyDataEncoded =
+            "PAovTGVuZ3RoIDQ3Ci9GaWx0ZXIgWy9GbGF0ZURlY29kZV0KPj4Kc3RyZWFtCnic4yrkMtQzAAIF\r\n" +
+            "AxQKq2ByLpexpSU2GVMzXBr0PX2TC1LSDBRc8rkCuQCBJhXPCmVuZHN0cmVhbQplbmRvYmoKNyAw\r\n" +
+            "IG9iago8PAovVHlwZSAvWE9iamVjdAovU3VidHlwZSAvSW1hZ2UKL05hbWUgL0lNY3BkZjAKL1dp\r\n";
+
+        private readonly static byte[] Attachment2BodyData = Convert.FromBase64String(Attachment2BodyDataEncoded);
 
         private const string TestSingleBase64 = 
 			"Received: from development02 (development02 [127.0.0.1])\r\n" +
@@ -53,9 +69,9 @@ namespace Tests
 			"\r\n" +
 			"------=_NextPart_000_0000_01C4239E.999350F0\r\n" +
 			Attachment1HeaderData +
-			Attachment1BodyData +
+			Attachment1BodyDataEncoded +
 			"------=_NextPart_000_0000_01C4239E.999350F0--\r\n" +
-			"\r\n";
+            "\r\n";
 
         private const string TestDoubleBase64 = 
 			"Received: from development02 (development02 [127.0.0.1])\r\n" +
@@ -79,17 +95,15 @@ namespace Tests
 			"\r\n" +
 			"------=_NextPart_000_0000_01C4239E.999350F0\r\n" +
 			Attachment1HeaderData +
-			Attachment1BodyData +
+			Attachment1BodyDataEncoded +
 			"------=_NextPart_000_0000_01C4239E.999350F0\r\n" +
 			"Content-Type: application/pdf;\r\n" +
-			"	name=\"test.pdf\"\r\n" +
-			"Content-Transfer-Encoding: 7bit\r\n" +
+            "	name=\"000000002.pdf\"\r\n" +
+			"Content-Transfer-Encoding: base64\r\n" +
 			"Content-Disposition: attachment;\r\n" +
-			"	filename=\"test.pdf\"\r\n" +
+            "	filename=\"000000002.pdf\"\r\n" +
 			"\r\n" +
-			"PAovTGVuZ3RoIDQ3Ci9GaWx0ZXIgWy9GbGF0ZURlY29kZV0KPj4Kc3RyZWFtCnic4yrkMtQzAAIF\r\n" +
-			"AxQKq2ByLpexpSU2GVMzXBr0PX2TC1LSDBRc8rkCuQCBJhXPCmVuZHN0cmVhbQplbmRvYmoKNyAw\r\n" +
-			"IG9iago8PAovVHlwZSAvWE9iamVjdAovU3VidHlwZSAvSW1hZ2UKL05hbWUgL0lNY3BkZjAKL1dp\r\n" +
+            Attachment2BodyDataEncoded +
 			"\r\n" +
 			"------=_NextPart_000_0000_01C4239E.999350F0--\r\n" +
 			"\r\n";
@@ -114,62 +128,68 @@ namespace Tests
 			"X-Mailer: Microsoft Outlook IMO, Build 9.0.2416 (9.0.2911.0)\r\n" +
 			"Importance: Normal\r\n" +
 			"X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2800.1409\r\n" +
-			"" +
-			Attachment1BodyData;
+            "\r\n" +
+			Attachment1BodyDataEncoded;
 
 		[Test]
 		public void MessageHeaders()
 		{
-			var message = new SmtpMessage();
-			message.AddData( TestSingleBase64 );
+            var messageData = new SmtpMessageData { FromAddress = new MailAddress("test@test.com") };
+			messageData.AddData(TestSingleBase64);
+		    var message = messageData.ParseMessage();
 
-            Assert.AreEqual("from development02 (development02 [127.0.0.1]) by adexs.com (Eric Daugherty's C# Email Server) 4/16/2004 10:35:58 AM", message.Headers["Received"], "Received");
-            Assert.AreEqual("\"Eric Daugherty\" <edaugherty@adexs.com>", message.Headers["From"], "From");
-            Assert.AreEqual("CofAs", message.Headers["Subject"], "Subject");
-            Assert.AreEqual("Fri, 16 Apr 2004 10:35:55 -0500", message.Headers["Date"], "Date");
-            Assert.AreEqual("Produced By Microsoft MimeOLE V6.00.2800.1409", message.Headers["X-MimeOLE"], "X-MimeOLE");
+            message.Headers["Received"].ShouldEqual("from development02 (development02 [127.0.0.1]) by adexs.com (Eric Daugherty's C# Email Server) 4/16/2004 10:35:58 AM");
+            message.Headers["From"].ShouldEqual("\"Eric Daugherty\" <edaugherty@adexs.com>");
+            message.Subject.ShouldEqual("CofAs");
+            message.Headers["Date"].ShouldEqual("Fri, 16 Apr 2004 10:35:55 -0500");
+            message.Headers["X-MimeOLE"].ShouldEqual("Produced By Microsoft MimeOLE V6.00.2800.1409");
 		}
 
 		[Test]
 		public void SingleBase64Attachment()
 		{
-			var message = new SmtpMessage();
-			message.AddData( TestSingleBase64 );
-		  
-		    var messageParts = message.MessageParts;
+            var messageData = new SmtpMessageData { FromAddress = new MailAddress("test@test.com") };
+            messageData.AddData(TestSingleBase64);
+            var message = messageData.ParseMessage();
 
-            Assert.AreEqual(1, messageParts.Length, "AttachmentCount");
-            Assert.AreEqual(Attachment1HeaderData, messageParts[0].HeaderData, "AttachmentHeaderData");
-            Assert.AreEqual(Attachment1BodyData, messageParts[0].BodyData, "AttachmentBodyData");
-            Assert.AreEqual("application/pdf; name=\"000000001.pdf\"", messageParts[0].Headers["Content-Type"], "AttachmentContentType");
-            Assert.AreEqual("attachment; filename=\"000000001.pdf\"", messageParts[0].Headers["Content-Disposition"], "AttachmentContentDisposition");
+            message.Attachments.Count.ShouldEqual(1);
+            new BinaryReader(message.Attachments[0].ContentStream).ReadBytes((int)message.Attachments[0].ContentStream.Length).ShouldEqual(Attachment1BodyData);
+            message.Attachments[0].ContentType.MediaType.ShouldEqual("application/pdf");
+            message.Attachments[0].ContentDisposition.DispositionType.ShouldEqual("attachment");
+            message.Attachments[0].Name.ShouldEqual("000000001.pdf");
 		}
 
 		[Test]
 		public void DoubleBase64Attachment()
-		{
-			var message = new SmtpMessage();
-			message.AddData( TestDoubleBase64 );
-		  
-		    var messageParts = message.MessageParts;
+        {
+            var messageData = new SmtpMessageData { FromAddress = new MailAddress("test@test.com") };
+            messageData.AddData(TestDoubleBase64);
+            var message = messageData.ParseMessage();
 
-            Assert.AreEqual(2, messageParts.Length, "AttachmentCount");
-            Assert.AreEqual(Attachment1HeaderData, messageParts[0].HeaderData, "AttachmentHeaderData1");
-            Assert.AreEqual(Attachment1BodyData, messageParts[0].BodyData, "AttachmentBodyData1");
-            Assert.AreEqual("application/pdf; name=\"000000001.pdf\"", messageParts[0].Headers["Content-Type"], "AttachmentContentType1");
-            Assert.AreEqual("attachment; filename=\"000000001.pdf\"", messageParts[0].Headers["Content-Disposition"], "AttachmentContentDisposition1");
+            message.Attachments.Count.ShouldEqual(2);
+            new BinaryReader(message.Attachments[0].ContentStream).ReadBytes((int)message.Attachments[0].ContentStream.Length).ShouldEqual(Attachment1BodyData);
+            message.Attachments[0].ContentType.MediaType.ShouldEqual("application/pdf");
+            message.Attachments[0].ContentDisposition.DispositionType.ShouldEqual("attachment");
+            message.Attachments[0].Name.ShouldEqual("000000001.pdf");
+
+            new BinaryReader(message.Attachments[1].ContentStream).ReadBytes((int)message.Attachments[1].ContentStream.Length).ShouldEqual(Attachment2BodyData);
+            message.Attachments[1].ContentType.MediaType.ShouldEqual("application/pdf");
+            message.Attachments[1].ContentDisposition.DispositionType.ShouldEqual("attachment");
+            message.Attachments[1].Name.ShouldEqual("000000002.pdf");
 		}
 
 		[Test]
 		public void BodyBase64()
-		{
-			var message = new SmtpMessage();
-			message.AddData( TestBodyBase64 );
-		  
-		    var messageParts = message.MessageParts;
+        { 
+            var messageData = new SmtpMessageData { FromAddress = new MailAddress("test@test.com") };
+            messageData.AddData(TestBodyBase64);
+            var message = messageData.ParseMessage();
 
-            Assert.AreEqual(0, messageParts.Length, "AttachmentCount");
-            Assert.AreEqual("attachment; filename=\"000000002.pdf\"", message.Headers["Content-Disposition"], "ContentDisposition");
+            message.Attachments.Count.ShouldEqual(1);
+            new BinaryReader(message.Attachments[0].ContentStream).ReadBytes((int)message.Attachments[0].ContentStream.Length).ShouldEqual(Attachment1BodyData);
+            message.Attachments[0].ContentType.MediaType.ShouldEqual("application/pdf");
+            message.Attachments[0].ContentDisposition.DispositionType.ShouldEqual("attachment");
+            message.Attachments[0].Name.ShouldEqual("000000002.pdf");
 		}		
 	}
 }

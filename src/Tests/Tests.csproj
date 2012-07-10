@@ -36,14 +36,17 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\packages\NUnit.2.6.0.12054\lib\nunit.framework.dll</HintPath>
     </Reference>
+    <Reference Include="Should">
+      <HintPath>..\packages\Should.1.1.12.0\lib\Should.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="EmailAddressTests.cs" />
     <Compile Include="SmtpMessageTests.cs" />
-    <Compile Include="SmtpProcessorTests.cs" />
+    <Compile Include="SmtpHandlerTests.cs" />
+    <Compile Include="SmtpServerTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Kato\Kato.csproj">

@@ -1,3 +1,5 @@
+using System.Net.Mail;
+
 namespace Kato
 {
 	/// <summary>
@@ -19,6 +21,6 @@ namespace Kato
 		/// may vary.  Once this method returns with a value of true,
 		/// the message is considered delivered.
 		/// </summary>		
-		bool SpoolMessage( SmtpMessage message );
+		bool Queue(MailMessage message);
 	}
 }

@@ -36,20 +36,15 @@
     <Reference Include="System.Core" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="ConnectionWrapper.cs" />
     <Compile Include="ILog.cs" />
+    <Compile Include="ISmtpHandler.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="EmailAddress.cs" />
-    <Compile Include="InvalidEmailAddressException.cs" />
-    <Compile Include="SimpleServer.cs" />
+    <Compile Include="SmtpServer.cs" />
     <Compile Include="IMessageSpool.cs" />
-    <Compile Include="IRecipientFilter.cs" />
-    <Compile Include="LocalRecipientFilter.cs" />
     <Compile Include="MemoryMessageSpool.cs" />
     <Compile Include="SmtpContext.cs" />
-    <Compile Include="SmtpMessage.cs" />
-    <Compile Include="SmtpMessagePart.cs" />
-    <Compile Include="SmtpProcessor.cs" />
+    <Compile Include="SmtpMessageData.cs" />
+    <Compile Include="SmtpHandler.cs" />
   </ItemGroup>
   <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

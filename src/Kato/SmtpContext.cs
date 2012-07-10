@@ -27,7 +27,7 @@ namespace Kato
 		private int _lastCommand;
 
         /// <summary>The incoming message.</summary>
-		private SmtpMessage _message;
+		private SmtpMessageData _messageData;
 		
 		/// <summary>Encoding to use to send/receive data from the socket.</summary>
 		private readonly Encoding _encoding;
@@ -51,7 +51,7 @@ namespace Kato
 			_connectionId = connectionId;
 			_lastCommand = -1;
 			_socket = socket;
-		    _message = new SmtpMessage();
+		    _messageData = new SmtpMessageData();
 			
 			// Set the encoding to ASCII.  
 			_encoding = Encoding.ASCII;
@@ -105,15 +105,15 @@ namespace Kato
 		/// <summary>
 		/// The SMTPMessage that is currently being received.
 		/// </summary>
-		public SmtpMessage Message
+		public SmtpMessageData MessageData
 		{
 			get
 			{
-				return _message;
+				return _messageData;
 			}
 			set
 			{
-				_message = value;
+				_messageData = value;
 			}
 		}
 		
@@ -123,22 +123,22 @@ namespace Kato
 		/// parameter should not contain them.
 		/// </summary>
 		/// <param name="data">The data to write the the client.</param>
-		public void WriteLine( string data )
+		public void WriteLine(string data)
 		{
             _logger.Debug("Connection {0}: Wrote Line: {1}", _connectionId, data);
-			_socket.Send( _encoding.GetBytes( data + Eol ) );
+			_socket.Send(_encoding.GetBytes(data + Eol));
 		}
 		
 		/// <summary>
 		/// Reads an entire line from the socket.  This method
 		/// will block until an entire line has been read.
 		/// </summary>
-		public String ReadLine()
+		public string ReadLine()
 		{
 			// If we already buffered another line, just return
 			// from the buffer.			
 			var output = ReadBuffer();
-			if( output != null )
+			if (output != null)
 			{
 				return output;
 			}
@@ -150,18 +150,18 @@ namespace Kato
 			do
 			{
 				// Read the input data.
-				var count = _socket.Receive( byteBuffer );
+				var count = _socket.Receive(byteBuffer);
 				
-				if( count == 0 )
+				if (count == 0)
 				{
                     _logger.Debug("Socket closed before end of line received.");
 					return null;
 				}
 
-				_inputBuffer.Append( _encoding.GetString( byteBuffer, 0, count ) );
+				_inputBuffer.Append(_encoding.GetString(byteBuffer, 0, count));
                 _logger.Debug("Connection {0}: Read: {1}", _connectionId, _inputBuffer);
 			}
-			while( (output = ReadBuffer()) == null );
+			while((output = ReadBuffer()) == null);
 			
 			// IO Log statement is in ReadBuffer...
 			
@@ -174,8 +174,8 @@ namespace Kato
 		public void Reset()
 		{
             _logger.Debug("Connection {0}: Reset", _connectionId);
-			_message = new SmtpMessage();
-			_lastCommand = SmtpProcessor.CommandHelo;
+			_messageData = new SmtpMessageData();
+			_lastCommand = SmtpHandler.CommandHelo;
 		}
 		
 		/// <summary>
@@ -194,14 +194,14 @@ namespace Kato
 		private string ReadBuffer()
 		{
 			// If the buffer has data, check for a full line.
-			if( _inputBuffer.Length > 0 )				
+			if (_inputBuffer.Length > 0)				
 			{
 				var buffer = _inputBuffer.ToString();
-				var eolIndex = buffer.IndexOf( Eol );
-				if( eolIndex != -1 )
+				var eolIndex = buffer.IndexOf(Eol);
+				if (eolIndex != -1)
 				{
-					var output = buffer.Substring( 0, eolIndex );
-					_inputBuffer = new StringBuilder( buffer.Substring( eolIndex + 2 ) );
+					var output = buffer.Substring(0, eolIndex);
+					_inputBuffer = new StringBuilder(buffer.Substring(eolIndex + 2));
                     _logger.Debug("Connection {0}: Read Line: {1}", _connectionId, output);
 					return output;
 				}				

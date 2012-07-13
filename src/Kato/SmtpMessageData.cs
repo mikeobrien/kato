@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net.Mail;
+using System.Net.Mime;
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -23,6 +24,8 @@ namespace Kato
 	    private const string ContentDispositionFileName = "filename";
         private const string ContentTypeBoundry = "boundary";
 	    private const string ContentTypeMultiPartMixed = "multipart/mixed";
+	    private const string ContentTypeMultiPartAlternative = "multipart/alternative";
+        private const string ContentTypeHtml = "text/html";
 	    private const string ContentTypeName = "name";
 	    private const string ContentTransferEncodingHeader = "content-transfer-encoding";
 	    private static readonly string[] StandardHeaders = new[] { SubjectHeader, SenderHeader, ReplyToHeader };
@@ -79,9 +82,21 @@ namespace Kato
 
             if (parts.Any())
             {
-                var body = parts.FirstOrDefault(x => !x.Headers.ContainsKey(ContentDispositionHeader) ||
+                var bodies = parts.Where(x => !x.Headers.ContainsKey(ContentDispositionHeader) ||
                                             x.Headers[ContentDispositionHeader].Value != AttachmentDisposition);
-                if (body != null) message.Body = body.Data;
+                if (bodies.Any())
+                {
+                    var body = bodies.First();
+                    message.Body = body.Data;
+                    message.IsBodyHtml = (body.Headers.ContainsKey(ContentTypeHeader) && body.Headers[ContentTypeHeader].Value == ContentTypeHtml) ||
+                        (headers.ContainsKey(ContentTypeHeader) && headers[ContentTypeHeader].Value == ContentTypeHtml);
+                }
+
+                if (headers.ContainsKey(ContentTypeHeader) && headers[ContentTypeHeader].Value == ContentTypeMultiPartAlternative && bodies.Count() > 1)
+                {
+                    bodies.Skip(1).ToList().ForEach(x => message.AlternateViews.Add(
+                        AlternateView.CreateAlternateViewFromString(x.Data, new ContentType(x.Headers[ContentTypeHeader].RawValue))));
+                }
 
                 parts.Where(x => x.Headers.ContainsKey(ContentDispositionHeader) && 
                         x.Headers[ContentDispositionHeader].Value == AttachmentDisposition)
@@ -146,7 +161,8 @@ namespace Kato
 			var messageParts = new List<MessagePart>();
 
 	        if (headers.ContainsKey(ContentTypeHeader) && 
-                headers[ContentTypeHeader].Value == ContentTypeMultiPartMixed && 
+                (headers[ContentTypeHeader].Value == ContentTypeMultiPartMixed ||
+                 headers[ContentTypeHeader].Value == ContentTypeMultiPartAlternative) && 
                 headers[ContentTypeHeader].SubValues.ContainsKey(ContentTypeBoundry))
 	        {
                 var partRegex = new Regex(string.Format("--{0}(?<part>.*?)--{0}", 

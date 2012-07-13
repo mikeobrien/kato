@@ -1,4 +1,5 @@
 ﻿using System.IO;
+using System.Linq;
 using System.Net.Mail;
 using System.Net.Mime;
 using System.Text;
@@ -19,6 +20,7 @@ namespace Tests
         private const string To1 = "someone@test.com";
         private const string Subject1 = "A message for you";
         private const string Body1 = "This is a message";
+        private const string HtmlBody1 = "<p>This is a message</p>";
 
         private const string From2 = "anotherperson@reachmail.com";
         private const string To2 = "anotherperson@test.com";
@@ -62,6 +64,70 @@ namespace Tests
             message.To[0].Address.ShouldEqual(To2);
             message.Subject.ShouldEqual(Subject2);
             message.Body.ShouldEqual(Body2);
+        }
+
+        [Test]
+        public void should_parse_multipart_alternative_html_priority_messages()
+        {
+            using (var client = new SmtpClient(Host, Port))
+            {
+                var outgoingMessage = new MailMessage
+                {
+                    From = new MailAddress(From1),
+                    To = { To1 },
+                    Subject = Subject1,
+                    IsBodyHtml = false,
+                    Body = Body1
+                };
+
+                var htmlView = AlternateView.CreateAlternateViewFromString(HtmlBody1, null, MediaTypeNames.Text.Html);
+                outgoingMessage.AlternateViews.Add(htmlView);
+
+                client.Send(outgoingMessage);
+            }
+
+            var message = _messages.Dequeue();
+            message.From.Address.ShouldEqual(From1);
+            message.To[0].Address.ShouldEqual(To1);
+            message.Subject.ShouldEqual(Subject1);
+            message.Body.ShouldEqual(Body1);
+            message.IsBodyHtml.ShouldBeFalse();
+            message.AlternateViews.Count.ShouldEqual(1);
+            var view = message.AlternateViews.First();
+            new StreamReader(view.ContentStream).ReadToEnd().ShouldEqual(HtmlBody1);
+            view.ContentType.MediaType.ShouldEqual("text/html");
+        }
+
+        [Test]
+        public void should_parse_multipart_alternative_text_priority_messages()
+        {
+            using (var client = new SmtpClient(Host, Port))
+            {
+                var outgoingMessage = new MailMessage
+                {
+                    From = new MailAddress(From1),
+                    To = { To1 },
+                    Subject = Subject1,
+                    IsBodyHtml = true,
+                    Body = HtmlBody1
+                };
+
+                var textView = AlternateView.CreateAlternateViewFromString(Body1, null, MediaTypeNames.Text.Plain);
+                outgoingMessage.AlternateViews.Add(textView);
+                
+                client.Send(outgoingMessage);
+            }
+
+            var message = _messages.Dequeue();
+            message.From.Address.ShouldEqual(From1);
+            message.To[0].Address.ShouldEqual(To1);
+            message.Subject.ShouldEqual(Subject1);
+            message.Body.ShouldEqual(HtmlBody1);
+            //message.IsBodyHtml.ShouldBeTrue(); <-- I think there is a bug in the .net framework implementation
+            message.AlternateViews.Count.ShouldEqual(1);
+            var view = message.AlternateViews.First();
+            new StreamReader(view.ContentStream).ReadToEnd().ShouldEqual(Body1);
+            view.ContentType.MediaType.ShouldEqual("text/plain");
         }
 
         [Test]

@@ -83,5 +83,5 @@ end
 
 nugetpush :pushPackage => :createPackage do |nuget|
     nuget.apikey = nugetApiKey
-    nuget.package = File.join(deployPath, "kato.#{version}.nupkg")
+    nuget.package = File.join(deployPath, "kato.#{version}.nupkg").gsub('/', '\\')
 end

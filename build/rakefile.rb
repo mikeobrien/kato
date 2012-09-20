@@ -14,7 +14,7 @@ assemblyinfo :assemblyInfo do |asm|
     asm.product_name = "Kato"
     asm.title = "Kato"
     asm.description = "SMTP Server Library"
-    asm.copyright = "Copyright (c) 2012 Ultraviolet Catastrophe"
+    asm.copyright = "Copyright (c) #{Time.now.year} Ultraviolet Catastrophe"
     asm.output_file = "src/Kato/Properties/AssemblyInfo.cs"
 end
 

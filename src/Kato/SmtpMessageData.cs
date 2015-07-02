@@ -12,7 +12,7 @@ namespace Kato
 	/// <summary>
 	/// Stores an incoming SMTP Message.
 	/// </summary>
-	public class SmtpMessageData: object
+	public class SmtpMessageData
 	{
 		private static readonly string DoubleNewline = Environment.NewLine + Environment.NewLine;
 	    private const string SubjectHeader = "subject";

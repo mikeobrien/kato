@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Net;
 using System.Net.Mail;
 using System.Net.Sockets;
@@ -44,9 +45,6 @@ namespace Kato
 		private const string MessageUnknownUser = "550 User does not exist.";
 		
 		private const string MessageSystemError = "554 Transaction failed.";
-		
-		// Regular Expressions
-		private static readonly Regex AddressRegex = new Regex("<.+@.+>", RegexOptions.IgnoreCase);
 		
 		/// <summary>
 		/// Every connection will be assigned a unique id to 
@@ -397,19 +395,7 @@ namespace Kato
 		/// </summary>
 		private static string ParseAddress(string input)
 		{
-			var match = AddressRegex.Match(input);
-		    if (match.Success)
-			{
-				var matchText = match.Value;
-				
-				// Trim off the :< chars
-				matchText = matchText.Remove(0, 1);
-				// trim off the . char.
-				matchText = matchText.Remove(matchText.Length - 1, 1);
-				
-				return matchText;
-			}
-			return null;
+		    return input.Split(new [] {':'}, 2).Last();
 		}	
 	}
 }

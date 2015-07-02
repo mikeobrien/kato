@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd">
+   <metadata>
+      <id>kato</id>
+      <version>0.0.0.0</version>
+      <title>Kato</title>
+      <authors>Mike O'Brien</authors>
+      <description>SMTP Server Library.</description>
+      <releaseNotes />
+      <copyright />
+      <language>en-US</language>
+      <licenseUrl>https://github.com/mikeobrien/kato/blob/master/LICENSE</licenseUrl>
+      <projectUrl>https://github.com/mikeobrien/kato</projectUrl>
+      <owners>Mike O'Brien</owners>
+      <summary>SMTP Server Library.</summary>
+      <iconUrl>https://github.com/mikeobrien/kato/raw/master/misc/logo.png</iconUrl>
+      <tags>smtp server</tags>
+   </metadata>
+</package>

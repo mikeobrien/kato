@@ -52,7 +52,7 @@ namespace Tests
 			"     by adexs.com (Eric Daugherty's C# Email Server)\r\n" +
 			"     4/16/2004 10:35:58 AM\r\n" +
 			"From: \"Eric Daugherty\" <edaugherty@adexs.com>\r\n" +
-			"To: <test@test.com>\r\n" +
+            "To: \"Test Email\" <test@test.com>\r\n" +
 			"Subject: CofAs\r\n" +
 			"Date: Fri, 16 Apr 2004 10:35:55 -0500\r\n" +
 			"Message-ID: <LIEBLGPCEJMNGHIPABGIGEABCAAA.edaugherty@adexs.com>\r\n" +

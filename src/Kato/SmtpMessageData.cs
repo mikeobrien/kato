@@ -28,7 +28,7 @@ namespace Kato
         private const string ContentTypeHtml = "text/html";
 	    private const string ContentTypeName = "name";
 	    private const string ContentTransferEncodingHeader = "content-transfer-encoding";
-	    private static readonly string[] StandardHeaders = new[] { SubjectHeader, SenderHeader, ReplyToHeader };
+	    private static readonly string[] StandardHeaders = { SubjectHeader, SenderHeader, ReplyToHeader };
 
         private readonly List<MailAddress> _recipientAddresses;
 		private readonly StringBuilder _data;
@@ -62,14 +62,13 @@ namespace Kato
         public MailMessage ParseMessage()
         {
             var headers = ParseHeaders(_data.ToString());
-
+            
             var message = new MailMessage
             {
-                From = new MailAddress(FromAddress.Address)
+                From = FromAddress
             };
 
-            foreach (var address in _recipientAddresses)
-                message.To.Add(new MailAddress(address.Address));
+            foreach (var address in _recipientAddresses) message.To.Add(address);
 
             if (headers.ContainsKey(SubjectHeader)) message.Subject = headers[SubjectHeader].Value;
             if (headers.ContainsKey(SenderHeader)) message.Sender = new MailAddress(headers[SenderHeader].Value);

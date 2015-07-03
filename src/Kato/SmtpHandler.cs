@@ -1,10 +1,8 @@
 using System;
-using System.Linq;
 using System.Net;
 using System.Net.Mail;
 using System.Net.Sockets;
 using System.Text;
-using System.Text.RegularExpressions;
 
 namespace Kato
 {
@@ -45,10 +43,7 @@ namespace Kato
 		private const string MessageUnknownUser = "550 User does not exist.";
 		
 		private const string MessageSystemError = "554 Transaction failed.";
-		
-		// Regular Expressions
-		private static readonly Regex AddressRegex = new Regex("<.+@.+>", RegexOptions.IgnoreCase);
-		
+			
 		/// <summary>
 		/// Every connection will be assigned a unique id to 
 		/// provide consistent log output and tracking.
@@ -59,7 +54,7 @@ namespace Kato
         private readonly Func<SmtpContext, MailAddress, bool> _recipientFilter;
 		
 		/// <summary>Incoming Message spool</summary>
-		private readonly IMessageSpool _messageSpool;
+		private readonly Action<MailMessage> _handler;
 
 		/// <summary>Domain name for this server.</summary>
 		private readonly string _domain;
@@ -88,12 +83,12 @@ namespace Kato
         /// filtering the recipient addresses to determine which ones
         /// to accept for delivery.
         /// </param>
-        /// <param name="messageSpool">
+        /// <param name="handler">
         /// The IMessageSpool implementation is responsible for 
         /// spooling the inbound message once it has been recieved from the sender.
         /// </param>
         /// <param name="logger"> </param>
-        public SmtpHandler(string domain, IMessageSpool messageSpool, Func<SmtpContext, MailAddress, bool> recipientFilter, ILog logger)
+        public SmtpHandler(string domain, Action<MailMessage> handler, Func<SmtpContext, MailAddress, bool> recipientFilter, ILog logger)
 		{
             _logger = logger;
 			// Initialize the connectionId counter
@@ -106,7 +101,7 @@ namespace Kato
 			_heloResponse = String.Format(MessageDefaultHeloResponse, domain);	
 						
 			_recipientFilter = recipientFilter;
-			_messageSpool = messageSpool;
+			_handler = handler;
 		}
 		
 		/// <summary>
@@ -369,7 +364,7 @@ namespace Kato
 			}
 
 			// Spool the message
-			_messageSpool.Queue(messageData.ParseMessage());
+			_handler(messageData.ParseMessage());
 			context.WriteLine(MessageOk);
 			
 			// Reset the connection.

@@ -42,8 +42,6 @@
     <Compile Include="ISmtpHandler.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="SmtpServer.cs" />
-    <Compile Include="IMessageSpool.cs" />
-    <Compile Include="MemoryMessageSpool.cs" />
     <Compile Include="SmtpContext.cs" />
     <Compile Include="SmtpMessageData.cs" />
     <Compile Include="SmtpHandler.cs" />

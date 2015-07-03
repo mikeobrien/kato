@@ -1,5 +1,7 @@
 using System;
+using System.Collections.Generic;
 using System.Net;
+using System.Net.Mail;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading;
@@ -14,12 +16,12 @@ namespace Tests
 	{
 		private static readonly IPEndPoint EndPoint = new IPEndPoint(IPAddress.Loopback, 9900);
 		private TcpListener _listener;
-		private MemoryMessageSpool _messageSpool;
+		private Queue<MailMessage> _messageSpool;
 		
 		[SetUp]
 		public void Setup()
 		{
-			_messageSpool = new MemoryMessageSpool();
+			_messageSpool = new Queue<MailMessage>();
 			var listener = new Thread(Listener) {IsBackground = true};
 		    listener.Start();
 			// Block for a second to make sure the socket gets started.
@@ -31,7 +33,7 @@ namespace Tests
 			try
 			{
 			    var domain = "testdomain.com";
-				var processor = new SmtpHandler(domain, _messageSpool, (context, address) => address.Host == domain, new NullLogger());
+				var processor = new SmtpHandler(domain, x => _messageSpool.Enqueue(x), (context, address) => address.Host == domain, new NullLogger());
 				
 				_listener = new TcpListener(EndPoint);
 				_listener.Start();

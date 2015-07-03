@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net.Mail;
 using System.Net.Mime;
@@ -16,25 +17,30 @@ namespace Tests
         private const string Host = "127.0.0.1";
         private const int Port = 7234;
 
-        private const string From1 = "someone@reachmail.com";
-        private const string To1 = "someone@test.com";
+        private const string From1 = "\"Some From\" <someone@reachmail.com>";
+        private const string To1a = "\"Some To\" <someone@test.com>";
+        private const string To1b = "\"Some To\" <someone@test.com>";
+        private const string CC1a = "\"Some CC\" <someone@test.com>";
+        private const string CC1b = "\"Some CC\" <someone@test.com>";
+        private const string Bcc1a = "\"Some Bcc\" <someonebcc1@test.com>";
+        private const string Bcc1b = "\"Some Bcc\" <someonebcc2@test.com>";
         private const string Subject1 = "A message for you";
         private const string Body1 = "This is a message";
         private const string HtmlBody1 = "<p>This is a message</p>";
 
-        private const string From2 = "anotherperson@reachmail.com";
-        private const string To2 = "anotherperson@test.com";
+        private const string From2 = "\"Another From\" <anotherperson@reachmail.com>";
+        private const string To2 = "\"Another To\" <anotherperson@test.com>";
         private const string Subject2 = "Some other message for you";
         private const string Body2 = "This is some other message";
 
         private SmtpServer _server;
-        private MemoryMessageSpool _messages;
+        private Queue<MailMessage> _messages;
 
         [SetUp]
         public void SetUp()
         {
-            _messages = new MemoryMessageSpool();
-            _server = new SmtpServer(Domain, Port, _messages);
+            _messages = new Queue<MailMessage>();
+            _server = new SmtpServer(x =>_messages.Enqueue(x) , Domain, Port);
             _server.Start();
         }
 
@@ -49,19 +55,35 @@ namespace Tests
         {
             using (var client = new SmtpClient(Host, Port))
             {
-                client.Send(From1, To1, Subject1, Body1);
+                var outMessage = new MailMessage();
+                outMessage.From = new MailAddress(From1);
+                outMessage.To.Add(To1a);
+                outMessage.To.Add(To1b);
+                outMessage.CC.Add(CC1a);
+                outMessage.CC.Add(CC1b);
+                outMessage.Bcc.Add(Bcc1a);
+                outMessage.Bcc.Add(Bcc1b);
+                outMessage.Subject = Subject1;
+                outMessage.Body = Body1;
+
+                client.Send(outMessage);
                 client.Send(From2, To2, Subject2, Body2);
             }
 
             var message = _messages.Dequeue();
-            message.From.Address.ShouldEqual(From1);
-            message.To[0].Address.ShouldEqual(To1);
+            message.From.ShouldEqual(new MailAddress(From1));
+            message.To[0].ShouldEqual(new MailAddress(To1a));
+            message.To[1].ShouldEqual(new MailAddress(To1b));
+            message.CC[0].ShouldEqual(new MailAddress(CC1a));
+            message.CC[1].ShouldEqual(new MailAddress(CC1b));
+            message.Bcc[0].Address.ShouldEqual(new MailAddress(Bcc1a).Address);
+            message.Bcc[1].Address.ShouldEqual(new MailAddress(Bcc1b).Address);
             message.Subject.ShouldEqual(Subject1);
             message.Body.ShouldEqual(Body1);
 
             message = _messages.Dequeue();
-            message.From.Address.ShouldEqual(From2);
-            message.To[0].Address.ShouldEqual(To2);
+            message.From.ShouldEqual(new MailAddress(From2));
+            message.To[0].ShouldEqual(new MailAddress(To2));
             message.Subject.ShouldEqual(Subject2);
             message.Body.ShouldEqual(Body2);
         }
@@ -74,7 +96,7 @@ namespace Tests
                 var outgoingMessage = new MailMessage
                 {
                     From = new MailAddress(From1),
-                    To = { To1 },
+                    To = { To1a },
                     Subject = Subject1,
                     IsBodyHtml = false,
                     Body = Body1
@@ -87,8 +109,8 @@ namespace Tests
             }
 
             var message = _messages.Dequeue();
-            message.From.Address.ShouldEqual(From1);
-            message.To[0].Address.ShouldEqual(To1);
+            message.From.ShouldEqual(new MailAddress(From1));
+            message.To[0].ShouldEqual(new MailAddress(To1a));
             message.Subject.ShouldEqual(Subject1);
             message.Body.ShouldEqual(Body1);
             message.IsBodyHtml.ShouldBeFalse();
@@ -106,7 +128,7 @@ namespace Tests
                 var outgoingMessage = new MailMessage
                 {
                     From = new MailAddress(From1),
-                    To = { To1 },
+                    To = { To1a },
                     Subject = Subject1,
                     IsBodyHtml = true,
                     Body = HtmlBody1
@@ -119,8 +141,8 @@ namespace Tests
             }
 
             var message = _messages.Dequeue();
-            message.From.Address.ShouldEqual(From1);
-            message.To[0].Address.ShouldEqual(To1);
+            message.From.ShouldEqual(new MailAddress(From1));
+            message.To[0].ShouldEqual(new MailAddress(To1a));
             message.Subject.ShouldEqual(Subject1);
             message.Body.ShouldEqual(HtmlBody1);
             //message.IsBodyHtml.ShouldBeTrue(); <-- I think there is a bug in the .net framework implementation
@@ -141,7 +163,7 @@ namespace Tests
 
             using (var client = new SmtpClient(Host, Port))
             {
-                var mailMessage = new MailMessage(From1, To1, Subject1, Body1);
+                var mailMessage = new MailMessage(From1, To1a, Subject1, Body1);
                 mailMessage.Attachments.Add(new Attachment(new MemoryStream(Encoding.ASCII.GetBytes(attachment1)), filename1, contentType1));
                 client.Send(mailMessage);
 
@@ -156,8 +178,8 @@ namespace Tests
             }
 
             var message = _messages.Dequeue();
-            message.From.Address.ShouldEqual(From1);
-            message.To[0].Address.ShouldEqual(To1);
+            message.From.ShouldEqual(new MailAddress(From1));
+            message.To[0].ShouldEqual(new MailAddress(To1a));
             message.Subject.ShouldEqual(Subject1);
             message.Body.ShouldEqual(Body1);
             message.Attachments.Count.ShouldEqual(1);
@@ -167,8 +189,8 @@ namespace Tests
             new StreamReader(attachment.ContentStream).ReadToEnd().ShouldEqual(attachment1);
 
             message = _messages.Dequeue();
-            message.From.Address.ShouldEqual(From2);
-            message.To[0].Address.ShouldEqual(To2);
+            message.From.ShouldEqual(new MailAddress(From2));
+            message.To[0].ShouldEqual(new MailAddress(To2));
             message.Subject.ShouldEqual(Subject2);
             message.Body.ShouldEqual(Body2);
             message.Attachments.Count.ShouldEqual(2);

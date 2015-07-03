@@ -50,9 +50,9 @@ namespace Kato
         /// </param>
         /// <param name="logger"> </param>
         public SmtpServer(
+            Action<MailMessage> handler,
             string domain = null, 
-            int port = 25, 
-            IMessageSpool messageSpool = null,
+            int port = 25,
             Func<SmtpContext, MailAddress, bool> recipientFilter = null, 
             ILog logger = null)
 		{
@@ -60,16 +60,17 @@ namespace Kato
 	        domain = domain ?? Environment.MachineName;
             _handler = new SmtpHandler(
                 domain,
-                messageSpool ?? new MemoryMessageSpool(),
-                recipientFilter ?? ((context, address) => domain.Equals(address.Host)),
+                handler,
+                recipientFilter ?? ((context, address) => 
+                    domain == null || domain.Equals(address.Host)),
                 logger ?? new NullLogger());
-		}
+        }
 
-		/// <summary>
-		/// Listens for new connections and starts a new thread to handle each
-		/// new connection.  Loops infinitely.
-		/// </summary>
-		public void Start(bool async = true)
+        /// <summary>
+        /// Listens for new connections and starts a new thread to handle each
+        /// new connection.  Loops infinitely.
+        /// </summary>
+        public void Start(bool async = true)
 		{
             _connections = new ConcurrentDictionary<Socket, object>();
 			var endPoint = new IPEndPoint(IPAddress.Any, _port);

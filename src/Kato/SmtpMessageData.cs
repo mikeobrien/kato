@@ -65,10 +65,29 @@ namespace Kato
             
             var message = new MailMessage
             {
-                From = FromAddress
+                From = headers.ContainsKey("from") ? 
+                    new MailAddress(headers["from"].Value) : 
+                    FromAddress
             };
 
-            foreach (var address in _recipientAddresses) message.To.Add(address);
+            var to = headers.ContainsKey("to")
+                ? ParseAddresses(headers["to"].Value)
+                : Enumerable.Empty<MailAddress>().ToList();
+
+            var cc = headers.ContainsKey("cc")
+                ? ParseAddresses(headers["cc"].Value)
+                : Enumerable.Empty<MailAddress>().ToList();
+
+            if (to.Any() || cc.Any())
+            {
+                to.ForEach(x => message.To.Add(x));
+                cc.ForEach(x => message.CC.Add(x));
+                _recipientAddresses.Select(x => x.Address)
+                    .Except(to.Select(x => x.Address)
+                    .Concat(cc.Select(x => x.Address)))
+                    .ToList().ForEach(x => message.Bcc.Add(x));
+            }
+            else _recipientAddresses.ForEach(x => message.To.Add(x));
 
             if (headers.ContainsKey(SubjectHeader)) message.Subject = headers[SubjectHeader].Value;
             if (headers.ContainsKey(SenderHeader)) message.Sender = new MailAddress(headers[SenderHeader].Value);
@@ -184,6 +203,14 @@ namespace Kato
 	        }
 	        return messageParts;
         }
+
+        private static readonly Regex AddressRegex = new Regex("(.*?<.+?@.+?>)(,)?", RegexOptions.IgnoreCase);
+
+        private static List<MailAddress> ParseAddresses(string addresses)
+        {
+            return AddressRegex.Matches(addresses).Cast<Match>()
+                .Select(x => new MailAddress(x.Groups[1].Value)).ToList();
+        } 
 
         private class Header
         {

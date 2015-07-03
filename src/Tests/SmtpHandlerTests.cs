@@ -64,10 +64,9 @@ namespace Tests
 		{
 			var socket = Connect();
 			
-			CheckResponse(socket, "mail from:username@domain.com", "451");
 			CheckResponse(socket, "mail from:<user@name@domain.com>", "451");
 			
-			CheckResponse(socket, "mail from:<user name@domain123.com>", "250");
+			CheckResponse(socket, "mail from:<username@domain123.com>", "250");
 						
 			Disconnect(socket);
 		}
@@ -77,12 +76,11 @@ namespace Tests
 		{
 			var socket = Connect();
 			
-			CheckResponse(socket, "mail from:<user name@domain123.com>", "250");
+			CheckResponse(socket, "mail from:<username@domain123.com>", "250");
 			
-			CheckResponse(socket, "rcpt to:username@domain.com", "451");
 			CheckResponse(socket, "rcpt to:<user@name@domain.com>", "451");
 			
-			CheckResponse(socket, "rcpt to:<user name@domain123.com>", "550");
+			CheckResponse(socket, "rcpt to:<username@domain123.com>", "550");
 			CheckResponse(socket, "rcpt to:<username@domain.com>", "550");
 			
 			CheckResponse(socket, "rcpt to:<username@testdomain.com>", "250");
@@ -95,7 +93,7 @@ namespace Tests
 		public void DataTest()
 		{
 			var socket = Connect();
-			CheckResponse(socket, "mail from:<user name@domain123.com>", "250");
+			CheckResponse(socket, "mail from:<username@domain123.com>", "250");
 			CheckResponse(socket, "rcpt to:<username@testdomain.com>", "250");
 			CheckResponse(socket, "data", "354");
 			

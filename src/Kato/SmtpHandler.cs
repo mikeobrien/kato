@@ -46,6 +46,9 @@ namespace Kato
 		
 		private const string MessageSystemError = "554 Transaction failed.";
 		
+		// Regular Expressions
+		private static readonly Regex AddressRegex = new Regex("<.+@.+>", RegexOptions.IgnoreCase);
+		
 		/// <summary>
 		/// Every connection will be assigned a unique id to 
 		/// provide consistent log output and tracking.
@@ -292,12 +295,8 @@ namespace Kato
 		{
 			if (context.LastCommand == CommandHelo)
 			{
-				MailAddress emailAddress;
-				try
-				{
-                    emailAddress = new MailAddress(ParseAddress(argument));
-				}
-                catch(Exception)
+				var emailAddress = ParseAddress(argument);
+				if (emailAddress == null)
                 {
                     _logger.Debug("Connection {0}: MailFrom argument: {1} rejected.  Should be from:<username@domain.com>", context.ConnectionId, argument);
 					context.WriteLine(MessageInvalidAddress);
@@ -321,33 +320,21 @@ namespace Kato
 		{
 			if (context.LastCommand == CommandMail || context.LastCommand == CommandRcpt)
 			{				
-				var address = ParseAddress(argument);
-				if (address != null)
+				var emailAddress = ParseAddress(argument);
+				if (emailAddress != null)
 				{
-				    MailAddress emailAddress;
-					try
-					{
-                        emailAddress = new MailAddress(address);
-					}
-					catch(FormatException)
-					{
-                        _logger.Debug("Connection {0}: RcptTo argument: {1} rejected.  Should be from:<username@domain.com>", context.ConnectionId, argument);
-						context.WriteLine(MessageInvalidAddress);
-					    return;
-					}	
-					
 					// Check to make sure we want to accept this message.
 					if (_recipientFilter(context, emailAddress))
 					{						
 						context.MessageData.AddToAddress(emailAddress);
 						context.LastCommand = CommandRcpt;							
 						context.WriteLine(MessageOk);
-                        _logger.Debug("Connection {0}: RcptTo address: {1} accepted.", context.ConnectionId, address);
+                        _logger.Debug("Connection {0}: RcptTo address: {1} accepted.", context.ConnectionId, emailAddress);
 					}
 					else
 					{
 						context.WriteLine(MessageUnknownUser);
-                        _logger.Debug("Connection {0}: RcptTo address: {1} rejected.  Did not pass Address Filter.", context.ConnectionId, address);
+                        _logger.Debug("Connection {0}: RcptTo address: {1} rejected.  Did not pass Address Filter.", context.ConnectionId, emailAddress);
 					}
 				}
 				else
@@ -393,9 +380,16 @@ namespace Kato
 		/// Parses a valid email address out of the input string and return it.
 		/// Null is returned if no address is found.
 		/// </summary>
-		private static string ParseAddress(string input)
+		private static MailAddress ParseAddress(string input)
 		{
-		    return input.Split(new [] {':'}, 2).Last();
+		    try
+		    {
+                return new MailAddress(input.Split(new []{':'}, 2)[1]);
+		    }
+		    catch (Exception)
+		    {
+                return null;
+            }
 		}	
 	}
 }

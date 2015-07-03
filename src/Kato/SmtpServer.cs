@@ -29,37 +29,35 @@ namespace Kato
 		private readonly int _port;
 	    private readonly ISmtpHandler _handler;
 
-	    /// <summary>
-		/// Creates a new SimpleServer that listens on a specific
-		/// port for connections and passes them to the specified delagat
-		/// </summary>
+        /// <summary>
+        /// Creates a new SimpleServer that listens on a specific
+        /// port for connections and passes them to the specified delagat
+        /// </summary>
         /// <param name="domain">
         /// The domain name this server handles mail for.  This does not have to
         /// be a valid domain name, but it will be included in the Welcome Message
         /// and HELO response.
         /// </param>
-		/// <param name="port">The port to listen on.</param>
+        /// <param name="port">The port to listen on.</param>
         /// <param name="recipientFilter">
         /// The IRecipientFilter implementation is responsible for 
         /// filtering the recipient addresses to determine which ones
         /// to accept for delivery.
         /// </param>
-        /// <param name="messageSpool">
-        /// The IMessageSpool implementation is responsible for 
-        /// spooling the inbound message once it has been recieved from the sender.
+        /// <param name="handler">
+        /// Handler for inbound message once it has been recieved from the sender.
         /// </param>
         /// <param name="logger"> </param>
         public SmtpServer(
             Action<MailMessage> handler,
-            string domain = null, 
             int port = 25,
+            string domain = null, 
             Func<SmtpContext, MailAddress, bool> recipientFilter = null, 
             ILog logger = null)
 		{
 			_port = port;
-	        domain = domain ?? Environment.MachineName;
             _handler = new SmtpHandler(
-                domain,
+                domain ?? Environment.MachineName,
                 handler,
                 recipientFilter ?? ((context, address) => 
                     domain == null || domain.Equals(address.Host)),

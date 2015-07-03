@@ -105,7 +105,8 @@ namespace Kato
                 if (bodies.Any())
                 {
                     var body = bodies.First();
-                    message.Body = body.Data;
+                    message.Body = !body.Headers.ContainsKey(ContentTransferEncodingHeader) ? body.Data : 
+                        Encoding.UTF8.GetString(DecodeData(body.Data, body.Headers[ContentTransferEncodingHeader].Value));
                     message.IsBodyHtml = (body.Headers.ContainsKey(ContentTypeHeader) && body.Headers[ContentTypeHeader].Value == ContentTypeHtml) ||
                         (headers.ContainsKey(ContentTypeHeader) && headers[ContentTypeHeader].Value == ContentTypeHtml);
                 }
@@ -119,7 +120,7 @@ namespace Kato
                 parts.Where(x => x.Headers.ContainsKey(ContentDispositionHeader) && 
                         x.Headers[ContentDispositionHeader].Value == AttachmentDisposition)
                     .Select(x => new {
-                        Data = DecodeData(x.Data, x.Headers[ContentTransferEncodingHeader].Value),
+                        Data = new MemoryStream(DecodeData(x.Data, x.Headers[ContentTransferEncodingHeader].Value)),
                         Filename = x.Headers[ContentDispositionHeader].SubValues.ContainsKey(ContentDispositionFileName) ?
                             x.Headers[ContentDispositionHeader].SubValues[ContentDispositionFileName] : null,
                         Name = x.Headers[ContentTypeHeader].SubValues.ContainsKey(ContentTypeName) ?
@@ -130,16 +131,16 @@ namespace Kato
             return message;
         }
 
-        private static MemoryStream DecodeData(string data, string encoding)
+        private static byte[] DecodeData(string data, string encoding)
         {
             switch (encoding)
             {
-                case "base64": return new MemoryStream(Convert.FromBase64String(data));
+                case "base64": return Convert.FromBase64String(data);
                 case "7bit":
                 case "8bit":
-                case "binary": return new MemoryStream(Encoding.ASCII.GetBytes(data));
-                case "quoted-printable": return new MemoryStream(Encoding.ASCII.GetBytes(Attachment.CreateAttachmentFromString("", data).Name));
-                default: throw new Exception(string.Format("Content transfer encoding of type {0} not supported.", encoding));
+                case "binary": return Encoding.ASCII.GetBytes(data);
+                case "quoted-printable": return Encoding.UTF8.GetBytes(Attachment.CreateAttachmentFromString("", data).Name);
+                default: throw new Exception($"Content transfer encoding of type {encoding} not supported.");
             }
         }
 

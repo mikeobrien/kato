@@ -40,7 +40,7 @@ namespace Tests
         public void SetUp()
         {
             _messages = new Queue<MailMessage>();
-            _server = new SmtpServer(x =>_messages.Enqueue(x) , Domain, Port);
+            _server = new SmtpServer(x =>_messages.Enqueue(x), Port, Domain);
             _server.Start();
         }
 
